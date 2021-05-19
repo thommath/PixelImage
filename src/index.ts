@@ -15,8 +15,8 @@ document.body.appendChild( renderer.domElement );
 const texture = new TextureLoader().load( "nature big.jpg" );
 //const width = 120;//100*5;
 //const height = 60;//56*5;
-const width = 3840;//100*5;
-const height = 2160;//56*5;
+const width = 3840/2;//100*5;
+const height = 2160/2;//56*5;
 
 const uniforms = {
   uTime: { value: 0 },

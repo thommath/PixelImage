@@ -12,15 +12,18 @@ renderer.setSize( window.innerWidth, window.innerHeight );
 document.body.appendChild( renderer.domElement );
 
 //const texture = new TextureLoader().load( "nature medium.jpg" );
-const texture = new TextureLoader().load( "nature big.jpg" );
+const texture = new TextureLoader().load( "nature medium.jpg" );
 //const width = 120;//100*5;
 //const height = 60;//56*5;
-const width = 3840/2;//100*5;
-const height = 2160/2;//56*5;
+const width = 3840/4;//100*5;
+const height = 2160/4;//56*5;
 
 const uniforms = {
+  uSeed: { value: 123 },
   uTime: { value: 0 },
   uZ: { value: -width * 0.5 },
+  textureWidth: { value: width },
+  textureHeight: { value: height },
   uTexture: { type: "t", value: texture },
 };
 

@@ -8,6 +8,7 @@ attribute vec2 uv2;
 uniform mat4 modelViewMatrix;
 uniform mat4 projectionMatrix;
 
+uniform float uSeed;
 uniform float uZ;
 uniform float uTime;
 uniform vec2 uTextureSize;
@@ -190,10 +191,10 @@ vec3 bezier(vec3 p1, vec3 p2, vec3 p3, vec3 p4, float t) {
 }
 
 void main() {
-  float noise = turbulence(uv2);
-  float wait = 0.3-1.0*noise;//*turbulence(vec2(2.0,2.0)+uv2);
+  float noise = turbulence(vec2(uSeed, uSeed) + uv2);
+  float wait = 0.3-1.0*noise;//*turbulence(vec2(uSeed, uSeed) + vec2(2.0,2.0)+uv2);
   
-  vec3 voronoi = voronoiNoise(vec3(uv2, 1.0) * 30.0);
+  vec3 voronoi = voronoiNoise(vec3(vec2(uSeed, uSeed) + uv2, 1.0) * 30.0);
 
   noise = clamp(0.0, 1.0, 0.3 + voronoi.z * 0.5 + noise * 0.2);
 
@@ -205,7 +206,7 @@ void main() {
     vec4(position + offset * clamp(vec3(1.0), vec3(0.0), vec3(time-wait, time, 1.0)), 1.0);
     
 
-  vec3 p1 = position + vec3(-uZ/4.0, 0.0, 0.0);
+  vec3 p1 = position + vec3(-uZ, 0.0, uZ);
   vec3 p2 = vec3(50.0, 0.0, uZ - 100.0);
   vec3 p3 = vec3(uZ, 0.0, uZ - 100.0);
   vec3 p4 = position+offset;

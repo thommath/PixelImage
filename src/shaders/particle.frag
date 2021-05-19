@@ -2,6 +2,8 @@
 precision highp float;
 
 uniform sampler2D uTexture;
+uniform float textureWidth;
+uniform float textureHeight;
 
 varying vec2 vUv;
 varying vec2 vUv2;
@@ -15,13 +17,15 @@ float bezier(float p1, float p2, float p3, float p4, float t) {
 
 void main() {
   
-  vec4 colA = texture2D(uTexture, vUv2);
+  //vec4 colA = texture2D(uTexture, vUv2);
 
   float iTime = vTime;
 
   float time = clamp(0.0, 1.0, bezier(1.0, 0.0, 0.5, 0.0, iTime));
 
   float mask = clamp(0.0, 1.0, 1.0 - abs(0.5 - vUv.x) * time - abs(0.5 - vUv.y) * time);
+
+  vec4 colA = texture2D(uTexture, vUv2 + vUv / vec2(textureWidth, textureHeight));
 
   gl_FragColor = colA * mask;
 

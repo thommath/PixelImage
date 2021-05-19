@@ -2,18 +2,20 @@ precision highp float;
 
 attribute vec3 offset;
 attribute vec3 position;
-attribute vec3 color;
 attribute vec2 uv;
+attribute vec2 uv2;
 
 uniform mat4 modelViewMatrix;
 uniform mat4 projectionMatrix;
 
+uniform float uZ;
 uniform float uTime;
 uniform vec2 uTextureSize;
 uniform sampler2D uTexture;
 
-varying vec3 vColor;
 varying vec2 vUv;
+varying vec2 vUv2;
+varying float vTime;
 
 float random(float n) {
   return fract(sin(n) * 43758.5453123);
@@ -95,15 +97,40 @@ float turbulence( vec2 p ) {
 
 }
 
+
+vec3 bezier(vec3 p1, vec3 p2, vec3 p3, vec3 p4, float t) {
+  float it = 1.0-t;
+  return pow(it,3.0) * p1 + 3.0*pow(it,2.0) * t * p2 + 3.0*it*pow(t,2.0)*p3 + pow(t,3.0)*p4;
+}
+
 void main() {
-  vUv = uv;
-  vColor = color;
+  float noise = turbulence(uv2);
+  float noise2 = turbulence(vec2(2.0,2.0)+uv2);
 
-  float noise = turbulence(uv);
+  noise = clamp(0.0, 1.0, 0.5 + noise / 2.0);
 
-  noise = 0.5 + noise / 2.0;
+  float time = clamp(0.0, 1.0, uTime*noise);
   
-  vec4 finalPosition = projectionMatrix * modelViewMatrix * vec4(position + offset * min(vec3(1.0), vec3(uTime*noise, uTime*noise, 1.0)), 1.0);
+  vec4 finalPosition =
+    projectionMatrix *
+    modelViewMatrix *
+    vec4(position + offset * clamp(vec3(1.0), vec3(0.0), vec3(time-2.0*noise2, time, 1.0)), 1.0);
+    
 
+  vec3 p1 = position + vec3(-uZ/4.0, 0.0, 0.0);
+  vec3 p2 = vec3(50.0, 0.0, uZ - 100.0);
+  vec3 p3 = vec3(uZ, 0.0, uZ - 100.0);
+  vec3 p4 = position+offset;
+
+  finalPosition =
+    projectionMatrix *
+    modelViewMatrix *
+    //vec4(position+offset,1.0);
+    vec4(bezier(p1, p2, p3, p4, time), 1.0);
+
+
+  vTime = time;
+  vUv = uv;
+  vUv2 = uv2;
   gl_Position = finalPosition;
 }

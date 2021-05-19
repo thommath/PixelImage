@@ -11,10 +11,16 @@ var renderer = new WebGLRenderer();
 renderer.setSize( window.innerWidth, window.innerHeight );
 document.body.appendChild( renderer.domElement );
 
-const texture = new TextureLoader().load( "nature medium.jpg" );
+//const texture = new TextureLoader().load( "nature medium.jpg" );
+const texture = new TextureLoader().load( "nature big.jpg" );
+//const width = 120;//100*5;
+//const height = 60;//56*5;
+const width = 3840;//100*5;
+const height = 2160;//56*5;
 
 const uniforms = {
   uTime: { value: 0 },
+  uZ: { value: -width * 0.5 },
   uTexture: { type: "t", value: texture },
 };
 
@@ -23,7 +29,7 @@ const material = new RawShaderMaterial({
   vertexShader: particleVert.substr(16, particleVert.length-20).replace(/\\n/g, "\n").replace(/\\r/g, "\n"),
   fragmentShader: particleFrag.substr(16, particleFrag.length-20).replace(/\\n/g, "\n").replace(/\\r/g, "\n"),
   //depthTest: false,
-  //transparent: true,
+  transparent: true,
   side: DoubleSide,
 });
 
@@ -32,8 +38,6 @@ const material = new RawShaderMaterial({
 var cubeGeo = new InstancedBufferGeometry().copy(new PlaneBufferGeometry(1, 1, 1));
 const mesh = new Mesh(cubeGeo, material);
 
-const width = 1024;//100*5;
-const height = 576;//56*5;
 
 const floats = new Float32Array(width*height*2);
 const offset = new Float32Array(width*height*3);
@@ -55,7 +59,7 @@ for(let x = 0; x < width; x++) {
 
 
 cubeGeo.setAttribute("offset", new InstancedBufferAttribute(offset, 3, true, 1));
-cubeGeo.setAttribute("uv", new InstancedBufferAttribute(floats, 2, true, 1));
+cubeGeo.setAttribute("uv2", new InstancedBufferAttribute(floats, 2, true, 1));
 scene.add(mesh)
 
 // Initialize a planet system

@@ -19,16 +19,15 @@ const run = async () => {
       res(tex);
     })
   });
-  const pixelDensity = 100;
+  const pixelDensity = 2000;
   const height = Math.round(pixelDensity * (texture.image.height / texture.image.width));
 
-  const duration = 5;
-  const pixelWidth = window.innerWidth / 2;
+  const duration = 10;
+  const pixelWidth = window.innerWidth * 0.95;
 
   const uniforms = {
     uSeed: { value: 123 },
     uTime: { value: 0 },
-
     
     uAnimationDuration: { value: duration },
     
@@ -55,33 +54,19 @@ const run = async () => {
   const mesh = new Mesh(cubeGeo, material);
 
 
-  const floats = new Float32Array(pixelDensity*height*2);
-  const offset = new Float32Array(pixelDensity*height*2);
+  const index = new Float32Array(pixelDensity*height*2);
 
   for(let x = 0; x < pixelDensity; x++) {
     for(let y = 0; y < height; y++) {
-      floats[2*x+2*y*pixelDensity] = x / pixelDensity;
-      floats[2*x+2*y*pixelDensity + 1] = y / height;
-
-      
-      offset[2*x+2*y*pixelDensity] = x * 1 - pixelDensity / 2;
-      offset[2*x+2*y*pixelDensity + 1] = y * 1 - height / 2;
+      index[2*x+2*y*pixelDensity] = x;
+      index[2*x+2*y*pixelDensity + 1] = y;
     }
   }
 
-
-
-
-
-  cubeGeo.setAttribute("offset", new InstancedBufferAttribute(offset, 2, true, 1));
-  cubeGeo.setAttribute("uv2", new InstancedBufferAttribute(floats, 2, true, 1));
+  cubeGeo.setAttribute("index", new InstancedBufferAttribute(index, 2, true, 1));
   scene.add(mesh)
 
   // Initialize a planet system
-  //const particleRenderer = new ParticleRenderer();
-
-  //scene.add(particleRenderer);
-
   camera.position.z = 1;
 
   const clock = new Clock();

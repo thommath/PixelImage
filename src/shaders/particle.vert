@@ -1,6 +1,6 @@
 precision highp float;
 
-attribute vec3 offset;
+attribute vec2 offset;
 attribute vec3 position;
 attribute vec2 uv;
 attribute vec2 uv2;
@@ -10,6 +10,8 @@ uniform mat4 projectionMatrix;
 
 uniform float uSeed;
 uniform float uZ;
+uniform float uScale;
+uniform float uAnimationDuration;
 uniform float uTime;
 uniform vec2 uTextureSize;
 uniform sampler2D uTexture;
@@ -87,7 +89,7 @@ float snoise(vec2 v)
 float turbulence( vec2 p ) {
 
   float w = 100.0;
-  float t = -.5;
+  float t = 0.0;
 
   for (float f = 1.0 ; f <= 10.0 ; f++ ){
     float power = pow( 2.0, f );
@@ -192,30 +194,32 @@ vec3 bezier(vec3 p1, vec3 p2, vec3 p3, vec3 p4, float t) {
 
 void main() {
   float noise = turbulence(vec2(uSeed, uSeed) + uv2);
-  float wait = 0.3-1.0*noise;//*turbulence(vec2(uSeed, uSeed) + vec2(2.0,2.0)+uv2);
+  float noise2 = turbulence(vec2(uSeed, uSeed)*2.0 + uv2);
+  float wait = clamp(0.0, 1.0, 1.0 * noise2);
   
   vec3 voronoi = voronoiNoise(vec3(vec2(uSeed, uSeed) + uv2, 1.0) * 30.0);
 
-  noise = clamp(0.0, 1.0, 0.3 + voronoi.z * 0.5 + noise * 0.2);
+  float weight = 0.0;
 
-  float time = clamp(0.0, 1.0, uTime*noise - wait);
+  noise = voronoi.z * weight + noise * (1.0-weight);
+
+  float speed = (1.0 + noise) * 1.5;
+
+  float time = clamp(0.0, 1.0, speed * uTime / uAnimationDuration - wait );
   
-  vec4 finalPosition =
-    projectionMatrix *
-    modelViewMatrix *
-    vec4(position + offset * clamp(vec3(1.0), vec3(0.0), vec3(time-wait, time, 1.0)), 1.0);
-    
+  vec4 finalPosition;
+  
 
-  vec3 p1 = position + vec3(-uZ, 0.0, uZ);
-  vec3 p2 = vec3(50.0, 0.0, uZ - 100.0);
-  vec3 p3 = vec3(uZ, 0.0, uZ - 100.0);
-  vec3 p4 = position+offset;
+  vec3 p1 = position + vec3(uZ / 2.0, 0.0, 0.0);
+  vec3 p2 = vec3(uZ / 8.0, 0.0, -50.0);
+  vec3 p3 = vec3(-uZ / 8.0, 0.0, -50.0);
+  vec3 p4 = position + vec3(offset, 0.0);
 
   finalPosition =
     projectionMatrix *
     modelViewMatrix *
     //vec4(position+offset,1.0);
-    vec4(bezier(p1, p2, p3, p4, time), 1.0);
+    vec4(bezier(p1, p2, p3, p4, time) * uScale, 1.0);
 
 
   vTime = time;

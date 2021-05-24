@@ -1,26 +1,11 @@
 precision highp float;
 
-attribute vec3 position;
-attribute vec2 index;
-attribute vec2 uv;
-
-uniform mat4 modelViewMatrix;
-uniform mat4 projectionMatrix;
-
 uniform float uSeed;
-uniform float uZ;
 uniform float uScale;
-uniform float uAnimationDuration;
-uniform float uTime;
 uniform float textureWidth;
 uniform float textureHeight;
-uniform sampler2D uTexture;
-uniform sampler2D turbulenceTexture;
-uniform sampler2D turbulenceTexture2;
 
 varying vec2 vUv;
-varying vec2 vUv2;
-varying float vTime;
 
 float random(float n) {
   return fract(sin(n) * 43758.5453123);
@@ -99,53 +84,11 @@ float turbulence( vec2 p ) {
   }
 
   return t;
-
 }
 
-
-
-vec3 bezier(vec3 p1, vec3 p2, vec3 p3, vec3 p4, float t) {
-  float it = 1.0-t;
-  return pow(it,3.0) * p1 + 3.0*pow(it,2.0) * t * p2 + 3.0*it*pow(t,2.0)*p3 + pow(t,3.0)*p4;
-}
 
 void main() {
-
-  vec2 offset = vec2(
-    index.x - textureWidth / 2.0,
-    index.y - textureHeight / 2.0
-  );
-  vec2 uv2 = vec2(
-    index.x / textureWidth,
-    index.y / textureHeight
-  );
-
-  float noise = texture2D(turbulenceTexture, uv2).r; //turbulence(vec2(uSeed, uSeed) + uv2);
-  float noise2 = texture2D(turbulenceTexture2, uv2).r;  // turbulence(vec2(uSeed, uSeed)*2.0 + uv2);
-
-
-  float wait = clamp(0.0, 1.0, 1.0 * noise2);
+  float noise = turbulence(uScale * (vec2(uSeed, uSeed) + vUv));
   
-  float speed = (1.0 + noise) * 1.5;
-
-  float time = clamp(0.0, 1.0, speed * uTime / uAnimationDuration - wait );
-  
-  vec4 finalPosition;
-
-  vec3 p1 = position + vec3(uZ, 0.0, 0.0);
-  vec3 p2 = vec3(uZ / 8.0, 0.0, -25.0);
-  vec3 p3 = vec3(-uZ / 6.0, 0.0, -25.0);
-  vec3 p4 = position + vec3(offset, 0.0);
-
-  finalPosition =
-    projectionMatrix *
-    modelViewMatrix *
-    //vec4(position+offset,1.0);
-    vec4(bezier(p1, p2, p3, p4, time) * uScale, 1.0);
-
-
-  vTime = time;
-  vUv = uv;
-  vUv2 = uv2;
-  gl_Position = finalPosition;
+  gl_FragColor = vec4(noise, noise, noise, 1.0);
 }

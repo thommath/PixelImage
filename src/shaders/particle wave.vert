@@ -76,7 +76,7 @@ void main() {
 
   vec2 randomOffset = vec2(random(index.z + noise), random(index.z + noise2));
 
-  offset = offset;// + randomOffset;
+  offset = offset + randomOffset;
 
   finalPosition =
     projectionMatrix *

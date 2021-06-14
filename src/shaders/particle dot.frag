@@ -9,7 +9,11 @@ varying vec2 vUv;
 varying vec2 vUv2;
 varying float vTime;
 varying vec2 vRnd;
+varying float vParticleScale;
 
+float random(float n) {
+  return fract(sin(n) * 43758.5453123);
+}
 
 float bezier(float p1, float p2, float p3, float p4, float t) {
   float it = 1.0-t;
@@ -24,11 +28,14 @@ void main() {
 
   float time = clamp(0.0, 1.0, bezier(1.0, 0.0, 0.5, 1.0, iTime));
 
-  float mask = clamp(0.0, 1.0, 1.0 - abs(0.5 - vUv.x) * time - abs(0.5 - vUv.y) * time);
+  float mask = pow((vUv.x - 0.5), 2.0) + pow((vUv.y - 0.5), 2.0) < 0.2 ? 1.0 : 0.0;
 
-  vec4 colA = texture2D(uTexture, vUv2 + vUv / vec2(textureWidth, textureHeight));
+  vec4 colA = texture2D(uTexture, vUv2 + vParticleScale * (random(vUv2.x) + random(vUv2.y)) * 1.0 / vec2(textureWidth, textureHeight));
 
-  gl_FragColor = 0.7 * colA * time
-    + (1.0 / 0.7) * (1.0-time) * vec4(clamp(0.0, 1.0, vRnd.r + vRnd.g - time - 0.1), clamp(0.0, 1.0, time - vRnd.r), clamp(0.0, 1.0, time - vRnd.g), 1.0);
+  float maxColors = 10.0;
+
+  colA.x = (floor(colA.x * maxColors) / maxColors);
+
+  gl_FragColor = colA * mask * vec4(1.0, 1.0, 1.0, 0.8);
 
 } 

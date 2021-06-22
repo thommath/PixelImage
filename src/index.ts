@@ -11,6 +11,7 @@ const imageRenderer = new ImageRenderer();
 const run = async () => {
 
   await imageRenderer.loadImage("AAM144.jpg");
+  //await imageRenderer.loadImage("nature big.jpg");
   imageRenderer.renderTurbulenceTextures();
   imageRenderer.renderEdgesTexture();
   imageRenderer.createParticles();

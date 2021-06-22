@@ -4,6 +4,9 @@ precision highp float;
 uniform sampler2D uTexture;
 uniform float textureWidth;
 uniform float textureHeight;
+uniform float alpha;
+uniform float uColorOffset;
+uniform float uLimitColors;
 
 varying vec2 vUv;
 varying vec2 vUv2;
@@ -30,12 +33,10 @@ void main() {
 
   float mask = pow((vUv.x - 0.5), 2.0) + pow((vUv.y - 0.5), 2.0) < 0.2 ? 1.0 : 0.0;
 
-  vec4 colA = texture2D(uTexture, vUv2 + vParticleScale * (random(vUv2.x) + random(vUv2.y)) * 1.0 / vec2(textureWidth, textureHeight));
+  vec4 colA = texture2D(uTexture, vUv2 + uColorOffset * (vParticleScale * (random(vUv2.x) - random(vUv2.y)) / vec2(textureWidth, textureHeight)));
 
-  float maxColors = 10.0;
+  colA.x = (floor(colA.x * uLimitColors) / uLimitColors);
 
-  colA.x = (floor(colA.x * maxColors) / maxColors);
-
-  gl_FragColor = colA * mask * vec4(1.0, 1.0, 1.0, 0.8);
+  gl_FragColor = colA * mask * vec4(1.0, 1.0, 1.0, alpha);
 
 } 

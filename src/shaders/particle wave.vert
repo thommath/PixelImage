@@ -10,6 +10,8 @@ uniform mat4 projectionMatrix;
 uniform float uSeed;
 uniform float uPixelParticleRatio;
 uniform float uZ;
+uniform float uParticleScale;
+uniform float uRandomOffsetScale;
 uniform float uScale;
 uniform float uLayers;
 uniform float uAnimationDuration;
@@ -72,9 +74,11 @@ void main() {
   vec4 finalPosition;
 
   vec4 edgeValue = texture2D(edgesTexture, uv2);
-  float particleScale = max(0.5, 1.0 - edgeValue.x) * clamp(0.8, 1.0, (uLayers - index.z) / uLayers) * 5.0;
+  edgeValue.x = 1.0*bezier(0.5, 0.99, 0.62, 0.99, edgeValue.x);
 
-  vec2 randomOffset = vec2(random(index.z + noise), random(index.z + noise2));
+  float particleScale = max(0.5, 1.0 - edgeValue.x) * clamp(0.8, 1.0, (uLayers - index.z) / uLayers) * uParticleScale;
+
+  vec2 randomOffset = uRandomOffsetScale * 2.0*(0.5-vec2(random(index.z + noise), random(index.z + noise2)));
 
   offset = offset + randomOffset;
 

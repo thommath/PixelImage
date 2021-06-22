@@ -26,7 +26,7 @@ export class ImageRenderer {
 
   colors = {background: "#aaaaaa"};
   
-  _uniforms = {
+  uniforms = {
     uTime: { value: 0.0 },
     turbulenceTexture: { type: "t", value: null as Texture },
     turbulenceTexture2: { type: "t", value: null as Texture },
@@ -37,6 +37,11 @@ export class ImageRenderer {
   clip = true;
   clipScale = 1;
 
+  alpha = 0.8;
+  particleScale = 5.0;
+  colorOffset = 0.3;
+  limitColors = 10;
+  randomOffsetScale = 1.0;
 
   status: "loading" | "done" = "loading";
 
@@ -60,13 +65,6 @@ export class ImageRenderer {
 
     this.updateBackground();
     this.addGui();
-
-    setTimeout(() => {this.pixelDensity = 50;
-    
-      this.renderTurbulenceTextures();
-      this.renderEdgesTexture();
-      this.createParticles();
-    },3000)
   }
 
   addGui() {
@@ -88,6 +86,13 @@ export class ImageRenderer {
     this.gui.add(this, "edgeMultiplier", 1, 10).onFinishChange(() => this.renderEdgesTexture());
     this.gui.add(this, "turbulenceScale1", 0.1, 10).onFinishChange(() => this.renderTurbulenceTextures());
     this.gui.add(this, "turbulenceScale2", 0.1, 10).onFinishChange(() => this.renderTurbulenceTextures());
+
+
+    this.gui.add(this, "alpha", 0, 1).onFinishChange(() => this.createParticles());
+    this.gui.add(this, "particleScale", 0.5, 10).onFinishChange(() => this.createParticles());
+    this.gui.add(this, "colorOffset", 0.0, 5).onFinishChange(() => this.createParticles());
+    this.gui.add(this, "limitColors", 1, 50).onFinishChange(() => this.createParticles());
+    this.gui.add(this, "randomOffsetScale", 0, 5).onFinishChange(() => this.createParticles());
     
   }
 
@@ -100,7 +105,7 @@ export class ImageRenderer {
 
   particlesMesh: Mesh | null;
   createParticles() {
-    const uniforms = {
+    const _uniforms = {
       uZ: { value: window.innerWidth / 4 },
       //uScale: { value: (pixelWidth / 870) * 1 / pixelDensity },
       uScale: { value: this.size / this.pixelDensity },
@@ -108,12 +113,17 @@ export class ImageRenderer {
 
       textureWidth: { value: this.pixelDensity },
       textureHeight: { value: this.height },
+      alpha: { value: this.alpha },
+      uParticleScale: { value: this.particleScale },
+      uColorOffset: { value: this.colorOffset },
+      uLimitColors: { value: this.limitColors },
+      uRandomOffsetScale: { value: this.randomOffsetScale },
 
-      ...this._uniforms,
+      ...this.uniforms,
     };
 
     const material = new RawShaderMaterial({
-      uniforms,
+      uniforms: _uniforms,
       vertexShader: particleWaveVert.substr(16, particleWaveVert.length-20).replace(/\\n/g, "\n").replace(/\\r/g, "\n"),
       //vertexShader: particleVert.substr(16, particleVert.length-20).replace(/\\n/g, "\n").replace(/\\r/g, "\n"),
       fragmentShader: dotFrag.substr(16, dotFrag.length-20).replace(/\\n/g, "\n").replace(/\\r/g, "\n"),
@@ -205,13 +215,15 @@ export class ImageRenderer {
 
 
   async loadImage(name: string) {
+    this.status = "loading";
     const texture: Texture = await new Promise((res, rej) => {
       new TextureLoader().load( name, (tex: Texture) => {
         res(tex);
       })
     });
     this.imageTexture = texture;
-    this._uniforms.uTexture.value = texture;
+    this.uniforms.uTexture.value = texture;
+    this.status = "done";
     return texture;
   }
 
@@ -231,8 +243,8 @@ export class ImageRenderer {
       this.renderer, this.pixelDensity, this.height, this.turbulence2, parseShader(defaultVert), parseShader(turbulenceFrag), 
       {uSeed: { value: 321 }, uScale: { value: this.turbulenceScale2 }}
     );
-    this._uniforms.turbulenceTexture.value = this.turbulence.texture;
-    this._uniforms.turbulenceTexture2.value = this.turbulence2.texture;
+    this.uniforms.turbulenceTexture.value = this.turbulence.texture;
+    this.uniforms.turbulenceTexture2.value = this.turbulence2.texture;
   }
 
   edges: WebGLRenderTarget | null;
@@ -264,11 +276,11 @@ export class ImageRenderer {
       );
     }
     edgesBlur.dispose();
-    this._uniforms.edgesTexture.value = this.edges.texture;
+    this.uniforms.edgesTexture.value = this.edges.texture;
   }
 
   render(delta: number) {
-    this._uniforms.uTime.value += delta*3;
+    this.uniforms.uTime.value += delta*3;
 
     this.camera.updateProjectionMatrix();
     this.renderer.setSize( window.innerWidth, window.innerHeight );

@@ -19,6 +19,8 @@ export class ImageRenderer {
   smoothingIterations = 25;
   edgeMultiplier = 1;
 
+  size = 80;
+
   turbulenceScale1 = 1;
   turbulenceScale2 = 2;
 
@@ -31,6 +33,9 @@ export class ImageRenderer {
     edgesTexture: { type: "t", value: null as Texture },
     uTexture: { type: "t", value: null as Texture },
   }
+
+  clip = true;
+  clipScale = 1;
 
 
   status: "loading" | "done" = "loading";
@@ -53,13 +58,28 @@ export class ImageRenderer {
 
     this.gui = new dat.GUI({name: 'My GUI'});
 
-    this.addBackground();
+    this.updateBackground();
     this.addGui();
+
+    setTimeout(() => {this.pixelDensity = 50;
+    
+      this.renderTurbulenceTextures();
+      this.renderEdgesTexture();
+      this.createParticles();
+    },3000)
   }
 
   addGui() {
+    this.gui.addColor(this.colors, "background").onChange(() => this.updateBackground());
+    this.gui.add(this, "clip").onFinishChange(() => this.updateBackground());
+    this.gui.add(this, "clipScale", 0.5, 2.0).onFinishChange(() => this.updateBackground());
+
+    
+    this.gui.add(this, "size", 20, 500).onFinishChange(() => this.createParticles());
+
     this.gui.add(this, "layers", 1, 1000).onFinishChange(() => this.createParticles());
-    this.gui.add(this, "pixelDensity", 10, 100).onFinishChange(() => {
+    this.gui.add(this, "pixelDensity", 10, 200).onFinishChange(() => {
+      this.pixelDensity = Math.round(this.pixelDensity);
       this.renderTurbulenceTextures();
       this.renderEdgesTexture();
       this.createParticles();
@@ -68,6 +88,7 @@ export class ImageRenderer {
     this.gui.add(this, "edgeMultiplier", 1, 10).onFinishChange(() => this.renderEdgesTexture());
     this.gui.add(this, "turbulenceScale1", 0.1, 10).onFinishChange(() => this.renderTurbulenceTextures());
     this.gui.add(this, "turbulenceScale2", 0.1, 10).onFinishChange(() => this.renderTurbulenceTextures());
+    
   }
 
   get height() {
@@ -82,7 +103,7 @@ export class ImageRenderer {
     const uniforms = {
       uZ: { value: window.innerWidth / 4 },
       //uScale: { value: (pixelWidth / 870) * 1 / pixelDensity },
-      uScale: { value: 80 / this.pixelDensity },
+      uScale: { value: this.size / this.pixelDensity },
       uLayers: {value: this.layers},
 
       textureWidth: { value: this.pixelDensity },
@@ -102,8 +123,6 @@ export class ImageRenderer {
     });
 
 
-    var planeGeo = new InstancedBufferGeometry().copy(new PlaneBufferGeometry(1, 1));
-    const mesh = new Mesh(planeGeo, material);
 
     const index = new Float32Array(this.pixelDensity*this.height*3 * this.layers);
     for(let l = 0; l < this.layers; l++) {
@@ -116,25 +135,72 @@ export class ImageRenderer {
       }
     }
 
+    var planeGeo = new InstancedBufferGeometry().copy(new PlaneBufferGeometry(1, 1));
     planeGeo.setAttribute("index", new InstancedBufferAttribute(index, 3, true, 1));
-
+    
     if (this.particlesMesh) {
       this.scene.remove(this.particlesMesh);
     }
 
+    const mesh = new Mesh(planeGeo, material);
     this.scene.add(mesh)
     this.particlesMesh = mesh;
+
+    this.updateBackground();
   }
 
-  addBackground() {
+  backgroundMeshes: {
+    leftMesh: null | Mesh,
+    rightMesh: null | Mesh,
+    topMesh: null | Mesh,
+    bottomMesh: null | Mesh,
+    behind: null | Mesh,
+  } = {
+    leftMesh: null,
+    rightMesh: null,
+    topMesh: null,
+    bottomMesh: null,
+    behind: null,
+  };
+
+  updateBackground() {
+    Object.values(this.backgroundMeshes).forEach((m) => this.scene.remove(m));
+
     const geometry = new PlaneGeometry(window.innerWidth, window.innerHeight, 1, 1);
     const cube = new Mesh(geometry, new MeshBasicMaterial({color: new Color(this.colors.background)}));
     cube.position.setZ(-1000);
     this.scene.add(cube);
+    this.backgroundMeshes.behind = cube;
     
-    this.gui.addColor(this.colors, "background").onChange(() => {
-      (cube.material as MeshBasicMaterial).color = new Color(this.colors.background);
-    });
+
+    if (this.clip && this.imageTexture) {
+      const leftGeometry = new PlaneGeometry(window.innerWidth, window.innerHeight, 1, 1);
+      const leftMesh = new Mesh(leftGeometry, new MeshBasicMaterial({color: new Color(this.colors.background)}));
+      leftMesh.position.setZ(1);
+      leftMesh.position.setX(-innerWidth/2 - this.clipScale * this.size / 2);
+      this.scene.add(leftMesh);
+      this.backgroundMeshes.leftMesh = leftMesh;
+      const rightGeometry = new PlaneGeometry(window.innerWidth, window.innerHeight, 1, 1);
+      const rightMesh = new Mesh(rightGeometry, new MeshBasicMaterial({color: new Color(this.colors.background)}));
+      rightMesh.position.setZ(1);
+      rightMesh.position.setX(+innerWidth/2 + this.clipScale * this.size / 2);
+      this.scene.add(rightMesh);
+      this.backgroundMeshes.rightMesh = rightMesh;
+      
+      const topGeometry = new PlaneGeometry(window.innerWidth, window.innerHeight, 1, 1);
+      const topMesh = new Mesh(topGeometry, new MeshBasicMaterial({color: new Color(this.colors.background)}));
+      topMesh.position.setZ(1);
+      topMesh.position.setY(+innerHeight/2 + (this.imageTexture.image.height / this.imageTexture.image.width) * this.clipScale * this.size / 2);
+      this.scene.add(topMesh);
+      this.backgroundMeshes.topMesh = topMesh;
+      const bottomGeometry = new PlaneGeometry(window.innerWidth, window.innerHeight, 1, 1);
+      const bottomMesh = new Mesh(bottomGeometry, new MeshBasicMaterial({color: new Color(this.colors.background)}));
+      bottomMesh.position.setZ(1);
+      bottomMesh.position.setY(-innerHeight/2 - (this.imageTexture.image.height / this.imageTexture.image.width) * this.clipScale * this.size / 2);
+      this.scene.add(bottomMesh);
+      this.backgroundMeshes.bottomMesh = bottomMesh;
+    }
+
   }
 
 

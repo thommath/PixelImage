@@ -71,24 +71,22 @@ void main() {
 
   //time = bezier(0.5, 0.5, 1.0, 1.0, time);
   
-  vec4 finalPosition;
+  vec2 randomOffset = uRandomOffsetScale * 2.0*(0.5-vec2(random(index.z + noise), random(index.z + noise2)));
+  offset = offset + randomOffset;
+  uv2 += randomOffset / vec2(textureWidth, textureHeight);
 
   vec4 edgeValue = texture2D(edgesTexture, uv2);
-  edgeValue.x = 1.0*bezier(0.5, 0.99, 0.62, 0.99, edgeValue.x);
+  //edgeValue.x = 1.0*bezier(0.5, 0.99, 0.62, 0.99, edgeValue.x);
 
-  float particleScale = max(0.5, 1.0 - edgeValue.x) * clamp(0.8, 1.0, (uLayers - index.z) / uLayers) * uParticleScale;
+  float particleScale = uParticleScale * max(0.2, pow(1.0 - edgeValue.x, 1.0));
+  //particleScale *= clamp(0.8, 1.0, (uLayers - index.z) / uLayers);
 
-  vec2 randomOffset = uRandomOffsetScale * 2.0*(0.5-vec2(random(index.z + noise), random(index.z + noise2)));
-
-  offset = offset + randomOffset;
-
-  finalPosition =
+  vec4 finalPosition =
     projectionMatrix *
     modelViewMatrix *
     vec4((position * particleScale + vec3(offset, 0.0)) * uScale, 1.0);
     //vec4(bezier(p1, p2, p3, p4, time) * uScale, 1.0);
 
-  uv2 += randomOffset / vec2(textureWidth, textureHeight);
 
   vTime = time;
   vUv = uv;

@@ -14,9 +14,9 @@ import * as dat from "dat.gui";
 
 export class ImageRenderer {
     
-  layers = 50;
-  pixelDensity = 30;
-  smoothingIterations = 25;
+  layers = 300;
+  pixelDensity = 50;
+  smoothingIterations = 5;
   edgeMultiplier = 1;
 
   size = 80;
@@ -38,7 +38,7 @@ export class ImageRenderer {
   clipScale = 1;
 
   alpha = 0.8;
-  particleScale = 5.0;
+  particleScale = 1.0;
   colorOffset = 0.3;
   limitColors = 10;
   randomOffsetScale = 1.0;
@@ -54,7 +54,9 @@ export class ImageRenderer {
 
 
   constructor() {
-    this.renderer = new WebGLRenderer();
+    this.renderer = new WebGLRenderer({
+      preserveDrawingBuffer: true
+    });
     this.renderer.setSize( window.innerWidth, window.innerHeight );
     document.body.appendChild( this.renderer.domElement );
     this.camera = new OrthographicCamera(0.1 * window.innerWidth / - 2, 0.1 * window.innerWidth / 2, 0.1 * window.innerHeight / 2, 0.1 * window.innerHeight / - 2, 1, 2000);
@@ -94,6 +96,14 @@ export class ImageRenderer {
     this.gui.add(this, "limitColors", 1, 50).onFinishChange(() => this.createParticles());
     this.gui.add(this, "randomOffsetScale", 0, 5).onFinishChange(() => this.createParticles());
     
+    this.gui.add(this, 'takeScreenshot');
+  }
+
+  takeScreenshot() {
+    var a = document.createElement('a');
+    a.href = this.renderer.domElement.toDataURL().replace("image/png", "image/octet-stream");
+    a.download = 'canvas.png';
+    a.click();
   }
 
   get height() {

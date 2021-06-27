@@ -8,6 +8,39 @@ import { ImageRenderer } from './ImageRenderer';
 const imageRenderer = new ImageRenderer();
 
 
+imageRenderer.renderer.domElement.addEventListener('dragenter', (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+});
+imageRenderer.renderer.domElement.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+});
+
+imageRenderer.renderer.domElement.addEventListener('drop', async (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  const dt = e.dataTransfer;
+
+
+  const url=e.dataTransfer.getData('text/plain');
+
+  if (url) {
+    await imageRenderer.loadImage(url);
+    imageRenderer.renderTurbulenceTextures();
+    imageRenderer.renderEdgesTexture();
+    imageRenderer.createParticles();
+  }
+
+  if (dt && dt.files && dt.files.length) {
+    await imageRenderer.loadImage(URL.createObjectURL(dt.files[0]));
+    imageRenderer.renderTurbulenceTextures();
+    imageRenderer.renderEdgesTexture();
+    imageRenderer.createParticles();
+  }
+});
+
+
 const run = async () => {
 
   await imageRenderer.loadImage("AAM144.jpg");

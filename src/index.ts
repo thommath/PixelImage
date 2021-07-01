@@ -1,12 +1,30 @@
-import { Clock } from 'three';
+import { Clock, Material, RawShaderMaterial } from 'three';
 import * as Stats from "stats.js";
-
-
 import { ImageRenderer } from './ImageRenderer';
 
+var style = document.createElement('style');
+style.innerHTML =
+	'html, body {' +
+		'height: 100%;' +
+    'width: 100%;' +
+    'margin: 0;'
+	'}';
+document.head.insertBefore(style, document.head.firstChild);
 
 const imageRenderer = new ImageRenderer();
 
+
+
+window.addEventListener("resize", () => {
+  imageRenderer.updateSize();
+  imageRenderer.render(0);
+});
+
+imageRenderer.renderer.domElement.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  imageRenderer.size += e.deltaY * -0.01;
+  imageRenderer.updateUniforms();
+});
 
 imageRenderer.renderer.domElement.addEventListener('dragenter', (e) => {
   e.preventDefault();
@@ -29,14 +47,16 @@ imageRenderer.renderer.domElement.addEventListener('drop', async (e) => {
     await imageRenderer.loadImage(url);
     imageRenderer.renderTurbulenceTextures();
     imageRenderer.renderEdgesTexture();
-    imageRenderer.createParticles();
+    imageRenderer.updateParticleInstances();
+    imageRenderer.updateUniforms();
   }
 
   if (dt && dt.files && dt.files.length) {
     await imageRenderer.loadImage(URL.createObjectURL(dt.files[0]));
     imageRenderer.renderTurbulenceTextures();
     imageRenderer.renderEdgesTexture();
-    imageRenderer.createParticles();
+    imageRenderer.updateParticleInstances();
+    imageRenderer.updateUniforms();
   }
 });
 
@@ -47,7 +67,8 @@ const run = async () => {
   //await imageRenderer.loadImage("nature big.jpg");
   imageRenderer.renderTurbulenceTextures();
   imageRenderer.renderEdgesTexture();
-  imageRenderer.createParticles();
+  imageRenderer.updateParticleInstances();
+  imageRenderer.updateUniforms();
   
 
 

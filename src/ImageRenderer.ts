@@ -16,6 +16,8 @@ export class ImageRenderer {
     
   layers = 300;
   pixelDensity = 50;
+  
+  enhanceDetails = true;
   smoothingIterations = 5;
   edgeMultiplier = 1;
 
@@ -34,7 +36,7 @@ export class ImageRenderer {
     uTexture: { type: "t", value: null as Texture },
   }
 
-  clip = true;
+  clip = false;
   clipScale = 1;
 
   alpha = 0.8;
@@ -57,7 +59,6 @@ export class ImageRenderer {
     this.renderer = new WebGLRenderer({
       preserveDrawingBuffer: true
     });
-    this.renderer.setSize( window.innerWidth, window.innerHeight );
     document.body.appendChild( this.renderer.domElement );
     this.camera = new OrthographicCamera(0.1 * window.innerWidth / - 2, 0.1 * window.innerWidth / 2, 0.1 * window.innerHeight / 2, 0.1 * window.innerHeight / - 2, 1, 2000);
     this.camera.position.z = 10;
@@ -65,44 +66,75 @@ export class ImageRenderer {
 
     this.gui = new dat.GUI({name: 'My GUI'});
 
+    this.createParticle();
     this.updateBackground();
     this.addGui();
   }
 
   addGui() {
-    this.gui.addColor(this.colors, "background").onChange(() => this.updateBackground());
-    this.gui.add(this, "clip").onFinishChange(() => this.updateBackground());
-    this.gui.add(this, "clipScale", 0.5, 2.0).onFinishChange(() => this.updateBackground());
+    const background = this.gui.addFolder("Background");
+    background.addColor(this.colors, "background").onChange(() => this.updateBackground());
+    background.add(this, "clip").onFinishChange(() => this.updateBackground());
+    background.add(this, "clipScale", 0.5, 2.0).onFinishChange(() => this.updateBackground());
 
     
-    this.gui.add(this, "size", 20, 500).onFinishChange(() => this.createParticles());
+    // this.gui.add(this, "size", 20, 500).onFinishChange(() => this.updateUniforms());
 
-    this.gui.add(this, "layers", 1, 1000).onFinishChange(() => this.createParticles());
-    this.gui.add(this, "pixelDensity", 10, 200).onFinishChange(() => {
+    const particles = this.gui.addFolder("Numer of particles");
+
+    particles.add(this, "layers", 1, 1000).onFinishChange(() => this.updateParticleInstances());
+    particles.add(this, "pixelDensity", 10, 200).onFinishChange(() => {
       this.pixelDensity = Math.round(this.pixelDensity);
       this.renderTurbulenceTextures();
       this.renderEdgesTexture();
-      this.createParticles();
+      this.updateParticleInstances();
+      this.updateUniforms();
     });
-    this.gui.add(this, "smoothingIterations", 0, 100).onFinishChange(() => this.renderEdgesTexture());
-    this.gui.add(this, "edgeMultiplier", 1, 10).onFinishChange(() => this.renderEdgesTexture());
-    this.gui.add(this, "turbulenceScale1", 0.1, 10).onFinishChange(() => this.renderTurbulenceTextures());
-    this.gui.add(this, "turbulenceScale2", 0.1, 10).onFinishChange(() => this.renderTurbulenceTextures());
 
+    const enhanceDetails = this.gui.addFolder("Enhance details");
 
-    this.gui.add(this, "alpha", 0, 1).onFinishChange(() => this.createParticles());
-    this.gui.add(this, "particleScale", 0.5, 10).onFinishChange(() => this.createParticles());
-    this.gui.add(this, "colorOffset", 0.0, 5).onFinishChange(() => this.createParticles());
-    this.gui.add(this, "limitColors", 1, 50).onFinishChange(() => this.createParticles());
-    this.gui.add(this, "randomOffsetScale", 0, 5).onFinishChange(() => this.createParticles());
+    enhanceDetails.add(this, "enhanceDetails", 0, 100).onFinishChange(() => this.updateUniforms());
+    enhanceDetails.add(this, "smoothingIterations", 0, 100).onFinishChange(() => this.renderEdgesTexture());
+    enhanceDetails.add(this, "edgeMultiplier", 0.1, 10).onFinishChange(() => this.renderEdgesTexture());
     
-    this.gui.add(this, 'takeScreenshot');
+    const noise = this.gui.addFolder("Noise");
+    noise.add(this, "turbulenceScale1", 0.1, 10).onFinishChange(() => this.renderTurbulenceTextures());
+    noise.add(this, "turbulenceScale2", 0.1, 10).onFinishChange(() => this.renderTurbulenceTextures());
+
+
+    const particleControl = this.gui.addFolder("Particle properties");
+    particleControl.add(this, "particleScale", 0.1, 10).onFinishChange(() => this.updateUniforms());
+    particleControl.add(this, "randomOffsetScale", 0, 10).onFinishChange(() => this.updateUniforms());
+    particleControl.add(this, "alpha", 0, 1).onFinishChange(() => this.updateUniforms());
+    particleControl.add(this, "colorOffset", 0.0, 10).onFinishChange(() => this.updateUniforms());
+    particleControl.add(this, "limitColors", 1, 50).onFinishChange(() => this.updateUniforms());
+    
+    this.gui.add(this, 'change_image');
+    this.gui.add(this, 'take_screenshot');
   }
 
-  takeScreenshot() {
+  take_screenshot() {
     var a = document.createElement('a');
     a.href = this.renderer.domElement.toDataURL().replace("image/png", "image/octet-stream");
     a.download = 'canvas.png';
+    a.click();
+    a.remove();
+  }
+
+  change_image() {
+    var a = document.createElement('input');
+    a.type = "file";
+
+    a.onchange = async (e: any) => {
+      const file = e.path[0].files[0];
+      await this.loadImage(URL.createObjectURL(file));
+      this.renderTurbulenceTextures();
+      this.renderEdgesTexture();
+      this.updateParticleInstances();
+      this.updateUniforms();
+      a.remove();
+    };
+
     a.click();
   }
 
@@ -114,10 +146,46 @@ export class ImageRenderer {
   }
 
   particlesMesh: Mesh | null;
-  createParticles() {
-    const _uniforms = {
+
+  createParticle() {
+    const material = new RawShaderMaterial({
+      uniforms: {
+        uZ: { value: 0 },
+        uScale: { value: 0 },
+        uLayers: {value: 0},
+        textureWidth: { value: 0 },
+        textureHeight: { value: 0 },
+        alpha: { value: 0 },
+        uParticleScale: { value: 0 },
+        uColorOffset: { value: 0 },
+        uLimitColors: { value: 0 },
+        uRandomOffsetScale: { value: 0 },
+        uEnhanceDetails: { value: 0 },
+  
+        ...this.uniforms,
+      },
+      vertexShader: particleWaveVert.substr(16, particleWaveVert.length-20).replace(/\\n/g, "\n").replace(/\\r/g, "\n"),
+      //vertexShader: particleVert.substr(16, particleVert.length-20).replace(/\\n/g, "\n").replace(/\\r/g, "\n"),
+      fragmentShader: dotFrag.substr(16, dotFrag.length-20).replace(/\\n/g, "\n").replace(/\\r/g, "\n"),
+      //depthTest: false,
+      transparent: true,
+      //side: DoubleSide,
+    });
+
+    var planeGeo = new InstancedBufferGeometry().copy(new PlaneBufferGeometry(1, 1));
+    const mesh = new Mesh(planeGeo, material);
+    this.scene.add(mesh);
+    this.particlesMesh = mesh;
+
+    this.updateUniforms();
+    this.updateParticleInstances();
+  }
+
+  updateUniforms() {
+    const uniforms = (this.particlesMesh.material as RawShaderMaterial).uniforms;
+    const a = {
       uZ: { value: window.innerWidth / 4 },
-      //uScale: { value: (pixelWidth / 870) * 1 / pixelDensity },
+      // uScale: { value: (pixelWidth / 870) * 1 / pixelDensity },
       uScale: { value: this.size / this.pixelDensity },
       uLayers: {value: this.layers},
 
@@ -129,21 +197,17 @@ export class ImageRenderer {
       uLimitColors: { value: this.limitColors },
       uRandomOffsetScale: { value: this.randomOffsetScale },
 
+      uEnhanceDetails: { value: this.enhanceDetails ? 1 : 0 },
+
       ...this.uniforms,
     };
 
-    const material = new RawShaderMaterial({
-      uniforms: _uniforms,
-      vertexShader: particleWaveVert.substr(16, particleWaveVert.length-20).replace(/\\n/g, "\n").replace(/\\r/g, "\n"),
-      //vertexShader: particleVert.substr(16, particleVert.length-20).replace(/\\n/g, "\n").replace(/\\r/g, "\n"),
-      fragmentShader: dotFrag.substr(16, dotFrag.length-20).replace(/\\n/g, "\n").replace(/\\r/g, "\n"),
-      //depthTest: false,
-      transparent: true,
-      //side: DoubleSide,
+    Object.keys(a).forEach(key => {
+      uniforms[key].value = (a as any)[key].value;
     });
+  }
 
-
-
+  updateParticleInstances() {
     const index = new Float32Array(this.pixelDensity*this.height*3 * this.layers);
     for(let l = 0; l < this.layers; l++) {
       for(let x = 0; x < this.pixelDensity; x++) {
@@ -154,19 +218,7 @@ export class ImageRenderer {
         }
       }
     }
-
-    var planeGeo = new InstancedBufferGeometry().copy(new PlaneBufferGeometry(1, 1));
-    planeGeo.setAttribute("index", new InstancedBufferAttribute(index, 3, true, 1));
-    
-    if (this.particlesMesh) {
-      this.scene.remove(this.particlesMesh);
-    }
-
-    const mesh = new Mesh(planeGeo, material);
-    this.scene.add(mesh)
-    this.particlesMesh = mesh;
-
-    this.updateBackground();
+    (this.particlesMesh.geometry as InstancedBufferGeometry).setAttribute("index", new InstancedBufferAttribute(index, 3, true, 1));
   }
 
   backgroundMeshes: {
@@ -289,11 +341,19 @@ export class ImageRenderer {
     this.uniforms.edgesTexture.value = this.edges.texture;
   }
 
+  updateSize() {
+    this.renderer.setSize( window.innerWidth, window.innerHeight );
+    this.camera.left = 0.1 * window.innerWidth / - 2;
+    this.camera.right = 0.1 * window.innerWidth / 2;
+    this.camera.top = 0.1 * window.innerHeight / 2;
+    this.camera.bottom = 0.1 * window.innerHeight / - 2;
+  }
+
   render(delta: number) {
     this.uniforms.uTime.value += delta*3;
-
-    this.camera.updateProjectionMatrix();
+    
     this.renderer.setSize( window.innerWidth, window.innerHeight );
+    this.camera.updateProjectionMatrix();
     this.renderer.render( this.scene, this.camera );
   }
 

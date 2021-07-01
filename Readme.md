@@ -1,4 +1,4 @@
-# Exploration
+# PixelImage
 
 ## Install
 

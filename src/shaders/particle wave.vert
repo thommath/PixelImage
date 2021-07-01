@@ -22,7 +22,7 @@ uniform sampler2D uTexture;
 uniform sampler2D turbulenceTexture;
 uniform sampler2D turbulenceTexture2;
 uniform sampler2D edgesTexture;
-
+uniform float uEnhanceDetails;
 
 
 
@@ -75,7 +75,7 @@ void main() {
   offset = offset + randomOffset;
   uv2 += randomOffset / vec2(textureWidth, textureHeight);
 
-  vec4 edgeValue = texture2D(edgesTexture, uv2);
+  vec4 edgeValue = texture2D(edgesTexture, uv2) * uEnhanceDetails;
   //edgeValue.x = 1.0*bezier(0.5, 0.99, 0.62, 0.99, edgeValue.x);
 
   float particleScale = uParticleScale * max(0.2, pow(1.0 - edgeValue.x, 1.0));

@@ -1,4 +1,4 @@
-import { Clock, Material, RawShaderMaterial } from 'three';
+import { Clock } from 'three';
 import * as Stats from "stats.js";
 import { ImageRenderer } from './ImageRenderer';
 

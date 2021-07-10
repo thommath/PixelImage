@@ -1,4 +1,4 @@
-import { Clock, Color, InstancedBufferAttribute, InstancedBufferGeometry, Mesh, MeshBasicMaterial, OrthographicCamera, PlaneBufferGeometry, PlaneGeometry, RawShaderMaterial, Scene, Texture, TextureLoader, WebGLRenderer, WebGLRenderTarget } from "three";
+import { AddEquation, BlendingSrcFactor, Clock, Color, CustomBlending, DstAlphaFactor, InstancedBufferAttribute, InstancedBufferGeometry, MaxEquation, Mesh, MeshBasicMaterial, MinEquation, MultiplyBlending, MultiplyOperation, OneFactor, OneMinusDstAlphaFactor, OneMinusSrcAlphaFactor, OneMinusSrcColorFactor, OrthographicCamera, PlaneBufferGeometry, PlaneGeometry, RawShaderMaterial, ReverseSubtractEquation, Scene, SrcAlphaFactor, SrcAlphaSaturateFactor, SrcColorFactor, SubtractEquation, SubtractiveBlending, Texture, TextureLoader, WebGLRenderer, WebGLRenderTarget } from "three";
 import { renderPixelShaderToTexture } from "./pixelShaderToTexture";
 import { parseShader } from "./utils";
 
@@ -45,6 +45,11 @@ export class ImageRenderer {
   limitColors = 10;
   randomOffsetScale = 1.0;
 
+  
+  animate = false;
+  animateNoiseOffset = 1.0;
+  animationSpeed = 1.0;
+
   status: "loading" | "done" = "loading";
 
   imageTexture: null | Texture;
@@ -59,6 +64,7 @@ export class ImageRenderer {
     this.renderer = new WebGLRenderer({
       preserveDrawingBuffer: true
     });
+    
     document.body.appendChild( this.renderer.domElement );
     this.camera = new OrthographicCamera(0.1 * window.innerWidth / - 2, 0.1 * window.innerWidth / 2, 0.1 * window.innerHeight / 2, 0.1 * window.innerHeight / - 2, 1, 2000);
     this.camera.position.z = 10;
@@ -108,6 +114,11 @@ export class ImageRenderer {
     particleControl.add(this, "alpha", 0, 1).onFinishChange(() => this.updateUniforms());
     particleControl.add(this, "colorOffset", 0.0, 10).onFinishChange(() => this.updateUniforms());
     particleControl.add(this, "limitColors", 1, 50).onFinishChange(() => this.updateUniforms());
+    
+    const animation = this.gui.addFolder("Animation");
+    animation.add(this, "animate").onFinishChange(() => this.updateUniforms());
+    animation.add(this, "animateNoiseOffset", 0, 1).onFinishChange(() => this.updateUniforms());
+    animation.add(this, "animationSpeed", 0, 10).onFinishChange(() => this.updateUniforms());
     
     this.gui.add(this, 'change_image');
     this.gui.add(this, 'take_screenshot');
@@ -161,6 +172,10 @@ export class ImageRenderer {
         uLimitColors: { value: 0 },
         uRandomOffsetScale: { value: 0 },
         uEnhanceDetails: { value: 0 },
+
+        uAnimation: { value: 0 },
+        uAnimationNoise: { value: 0 },
+        uAnimationSpeed: { value: 0 },
   
         ...this.uniforms,
       },
@@ -170,6 +185,10 @@ export class ImageRenderer {
       //depthTest: false,
       transparent: true,
       //side: DoubleSide,
+      blending: CustomBlending,
+      blendEquation: AddEquation,
+      blendSrc: SrcAlphaFactor,
+      blendDst: OneMinusSrcAlphaFactor,
     });
 
     var planeGeo = new InstancedBufferGeometry().copy(new PlaneBufferGeometry(1, 1));
@@ -198,6 +217,10 @@ export class ImageRenderer {
       uRandomOffsetScale: { value: this.randomOffsetScale },
 
       uEnhanceDetails: { value: this.enhanceDetails ? 1 : 0 },
+      
+      uAnimation: { value: this.animate ? 1 : 0 },
+      uAnimationNoise: { value: this.animateNoiseOffset },
+      uAnimationSpeed: { value: this.animationSpeed },
 
       ...this.uniforms,
     };
@@ -350,7 +373,7 @@ export class ImageRenderer {
   }
 
   render(delta: number) {
-    this.uniforms.uTime.value += delta*3;
+    this.uniforms.uTime.value += delta;
     
     this.renderer.setSize( window.innerWidth, window.innerHeight );
     this.camera.updateProjectionMatrix();

@@ -7,6 +7,11 @@ attribute vec2 uv;
 uniform mat4 modelViewMatrix;
 uniform mat4 projectionMatrix;
 
+
+uniform float uAnimation;
+uniform float uAnimationNoise;
+uniform float uAnimationSpeed;
+
 uniform float uSeed;
 uniform float uPixelParticleRatio;
 uniform float uZ;
@@ -59,27 +64,22 @@ void main() {
 
   float noise = texture2D(turbulenceTexture, uv2).r;
   float noise2 = texture2D(turbulenceTexture2, uv2).r;
-
-  float wait = clamp(0.0, 20.0, 20.0 * noise2);
-  
-  float speed = (1.0 + noise) * 1.5;
-
-  float time = speed * uTime / uAnimationDuration - wait;
-
-
-  time = 0.5*(1.0+sin(time));
-
-  //time = bezier(0.5, 0.5, 1.0, 1.0, time);
   
   vec2 randomOffset = uRandomOffsetScale * 2.0*(0.5-vec2(random(index.z + noise), random(index.z + noise2)));
-  offset = offset + randomOffset;
+
+  randomOffset *= (1.0-uAnimation) + uAnimation * 10.0 * (0.5+0.5*(0.5+0.5*sin(noise*100.0 * uAnimationNoise + uAnimationSpeed * uTime)));
+
   uv2 += randomOffset / vec2(textureWidth, textureHeight);
+
+  offset = offset + randomOffset;
 
   vec4 edgeValue = texture2D(edgesTexture, uv2) * uEnhanceDetails;
   //edgeValue.x = 1.0*bezier(0.5, 0.99, 0.62, 0.99, edgeValue.x);
 
   float particleScale = uParticleScale * max(0.2, pow(1.0 - edgeValue.x, 1.0));
   //particleScale *= clamp(0.8, 1.0, (uLayers - index.z) / uLayers);
+
+  particleScale *= (1.0-uAnimation) + (max(0.2, pow(1.0 - edgeValue.x, 1.0)) > 0.5 ? uAnimation * (0.5+0.5*(0.5+0.5*sin(noise*100.0 * uAnimationNoise + uAnimationSpeed * uTime * 1.0))) : 1.0);
 
   vec4 finalPosition =
     projectionMatrix *
@@ -88,7 +88,6 @@ void main() {
     //vec4(bezier(p1, p2, p3, p4, time) * uScale, 1.0);
 
 
-  vTime = time;
   vUv = uv;
   vUv2 = uv2;
   gl_Position = finalPosition;

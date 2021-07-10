@@ -24,12 +24,6 @@ float bezier(float p1, float p2, float p3, float p4, float t) {
 }
 
 void main() {
-  
-  //vec4 colA = texture2D(uTexture, vUv2);
-
-  float iTime = vTime;
-
-  float time = clamp(0.0, 1.0, bezier(1.0, 0.0, 0.5, 1.0, iTime));
 
   float mask = pow((vUv.x - 0.5), 2.0) + pow((vUv.y - 0.5), 2.0) < 0.2 ? 1.0 : 0.0;
 

@@ -41,10 +41,14 @@ export class ImageRenderer {
 
   alpha = 0.8;
   particleScale = 1.0;
+
   colorOffset = 0.3;
   limitColors = 10;
   randomOffsetScale = 1.0;
 
+  pointilism = false;
+  twoColors = true;
+  reducedColorMultiplier = 0.5;
   
   animate = false;
   animateNoiseOffset = 1.0;
@@ -70,7 +74,7 @@ export class ImageRenderer {
     this.camera.position.z = 10;
     this.scene = new Scene();
 
-    this.gui = new dat.GUI({name: 'My GUI'});
+    this.gui = new dat.GUI({name: 'Image settings'});
 
     this.createParticle();
     this.updateBackground();
@@ -83,7 +87,6 @@ export class ImageRenderer {
     background.add(this, "clip").onFinishChange(() => this.updateBackground());
     background.add(this, "clipScale", 0.5, 2.0).onFinishChange(() => this.updateBackground());
 
-    
     // this.gui.add(this, "size", 20, 500).onFinishChange(() => this.updateUniforms());
 
     const particles = this.gui.addFolder("Numer of particles");
@@ -111,9 +114,17 @@ export class ImageRenderer {
     const particleControl = this.gui.addFolder("Particle properties");
     particleControl.add(this, "particleScale", 0.1, 10).onFinishChange(() => this.updateUniforms());
     particleControl.add(this, "randomOffsetScale", 0, 10).onFinishChange(() => this.updateUniforms());
-    particleControl.add(this, "alpha", 0, 1).onFinishChange(() => this.updateUniforms());
-    particleControl.add(this, "colorOffset", 0.0, 10).onFinishChange(() => this.updateUniforms());
-    particleControl.add(this, "limitColors", 1, 50).onFinishChange(() => this.updateUniforms());
+
+
+    const colorControl = this.gui.addFolder("Colors");
+    colorControl.add(this, "alpha", 0, 1).onFinishChange(() => this.updateUniforms());
+    colorControl.add(this, "colorOffset", 0.0, 10).onFinishChange(() => this.updateUniforms());
+    colorControl.add(this, "limitColors", 1, 50).onFinishChange(() => this.updateUniforms());
+    const Pointilism = colorControl.addFolder("Pointilism");
+    Pointilism.add(this, "pointilism").onFinishChange(() => this.updateUniforms());
+    Pointilism.add(this, "twoColors").onFinishChange(() => this.updateUniforms());
+    Pointilism.add(this, "reducedColorMultiplier", 0.0, 1.0).onFinishChange(() => this.updateUniforms());
+
     
     const animation = this.gui.addFolder("Animation");
     animation.add(this, "animate").onFinishChange(() => this.updateUniforms());
@@ -166,12 +177,17 @@ export class ImageRenderer {
         uLayers: {value: 0},
         textureWidth: { value: 0 },
         textureHeight: { value: 0 },
-        alpha: { value: 0 },
         uParticleScale: { value: 0 },
-        uColorOffset: { value: 0 },
-        uLimitColors: { value: 0 },
         uRandomOffsetScale: { value: 0 },
         uEnhanceDetails: { value: 0 },
+
+        uColorOffset: { value: 0 },
+        uLimitColors: { value: 0 },
+        alpha: { value: 0 },
+
+        uPointilism: { value: 0 },
+        uTwoColors: { value: 0 },
+        uReducedColorMultiplier: { value: 0 },
 
         uAnimation: { value: 0 },
         uAnimationNoise: { value: 0 },
@@ -210,11 +226,17 @@ export class ImageRenderer {
 
       textureWidth: { value: this.pixelDensity },
       textureHeight: { value: this.height },
-      alpha: { value: this.alpha },
       uParticleScale: { value: this.particleScale },
+      uRandomOffsetScale: { value: this.randomOffsetScale },
+      
       uColorOffset: { value: this.colorOffset },
       uLimitColors: { value: this.limitColors },
-      uRandomOffsetScale: { value: this.randomOffsetScale },
+      alpha: { value: this.alpha },
+
+      uPointilism: { value: this.pointilism ? 1 : 0 },
+      uTwoColors: { value: this.twoColors ? 1 : 0 },
+      uReducedColorMultiplier: { value: this.reducedColorMultiplier },
+
 
       uEnhanceDetails: { value: this.enhanceDetails ? 1 : 0 },
       

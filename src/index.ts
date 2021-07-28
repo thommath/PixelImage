@@ -24,6 +24,8 @@ imageRenderer.renderer.domElement.addEventListener('wheel', (e) => {
   e.preventDefault();
   imageRenderer.size += e.deltaY * -0.01;
   imageRenderer.updateUniforms();
+  imageRenderer.updateImageBackground();
+  imageRenderer.updateBackground();
 });
 
 imageRenderer.renderer.domElement.addEventListener('dragenter', (e) => {
@@ -49,6 +51,7 @@ imageRenderer.renderer.domElement.addEventListener('drop', async (e) => {
     imageRenderer.renderEdgesTexture();
     imageRenderer.updateParticleInstances();
     imageRenderer.updateUniforms();
+    imageRenderer.updateImageBackground();
   }
 
   if (dt && dt.files && dt.files.length) {
@@ -57,6 +60,7 @@ imageRenderer.renderer.domElement.addEventListener('drop', async (e) => {
     imageRenderer.renderEdgesTexture();
     imageRenderer.updateParticleInstances();
     imageRenderer.updateUniforms();
+    imageRenderer.updateImageBackground();
   }
 });
 
@@ -69,6 +73,7 @@ const run = async () => {
   imageRenderer.renderEdgesTexture();
   imageRenderer.updateParticleInstances();
   imageRenderer.updateUniforms();
+  imageRenderer.updateImageBackground();
   
 
 

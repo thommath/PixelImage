@@ -1,4 +1,4 @@
-import { AddEquation, BlendingSrcFactor, Clock, Color, CustomBlending, DstAlphaFactor, InstancedBufferAttribute, InstancedBufferGeometry, MaxEquation, Mesh, MeshBasicMaterial, MinEquation, MultiplyBlending, MultiplyOperation, OneFactor, OneMinusDstAlphaFactor, OneMinusSrcAlphaFactor, OneMinusSrcColorFactor, OrthographicCamera, PlaneBufferGeometry, PlaneGeometry, RawShaderMaterial, ReverseSubtractEquation, Scene, SrcAlphaFactor, SrcAlphaSaturateFactor, SrcColorFactor, SubtractEquation, SubtractiveBlending, Texture, TextureLoader, WebGLRenderer, WebGLRenderTarget } from "three";
+import { AddEquation, BlendingSrcFactor, Clock, Color, CustomBlending, DstAlphaFactor, InstancedBufferAttribute, InstancedBufferGeometry, MaxEquation, Mesh, MeshBasicMaterial, MinEquation, MultiplyBlending, MultiplyOperation, OneFactor, OneMinusDstAlphaFactor, OneMinusSrcAlphaFactor, OneMinusSrcColorFactor, OrthographicCamera, PlaneBufferGeometry, PlaneGeometry, RawShaderMaterial, ReverseSubtractEquation, Scene, SrcAlphaFactor, SrcAlphaSaturateFactor, SrcColorFactor, SubtractEquation, SubtractiveBlending, Texture, TextureLoader, WebGLRenderer, WebGLRenderTarget, ZeroFactor } from "three";
 import { renderPixelShaderToTexture } from "./pixelShaderToTexture";
 import { parseShader } from "./utils";
 
@@ -14,7 +14,7 @@ import * as dat from "dat.gui";
 
 export class ImageRenderer {
     
-  layers = 300;
+  layers = 100;
   pixelDensity = 50;
   
   enhanceDetails = true;
@@ -54,6 +54,8 @@ export class ImageRenderer {
   animateNoiseOffset = 1.0;
   animationSpeed = 1.0;
 
+  backgroundImage = false;
+
   status: "loading" | "done" = "loading";
 
   imageTexture: null | Texture;
@@ -78,6 +80,7 @@ export class ImageRenderer {
 
     this.createParticle();
     this.updateBackground();
+    this.updateImageBackground();
     this.addGui();
   }
 
@@ -86,13 +89,14 @@ export class ImageRenderer {
     background.addColor(this.colors, "background").onChange(() => this.updateBackground());
     background.add(this, "clip").onFinishChange(() => this.updateBackground());
     background.add(this, "clipScale", 0.5, 2.0).onFinishChange(() => this.updateBackground());
+    background.add(this, "backgroundImage").onFinishChange(() => this.updateImageBackground());
 
     // this.gui.add(this, "size", 20, 500).onFinishChange(() => this.updateUniforms());
 
     const particles = this.gui.addFolder("Numer of particles");
 
-    particles.add(this, "layers", 1, 1000).onFinishChange(() => this.updateParticleInstances());
-    particles.add(this, "pixelDensity", 10, 200).onFinishChange(() => {
+    particles.add(this, "layers", 1, 300).onFinishChange(() => this.updateParticleInstances());
+    particles.add(this, "pixelDensity", 10, 500).onFinishChange(() => {
       this.pixelDensity = Math.round(this.pixelDensity);
       this.renderTurbulenceTextures();
       this.renderEdgesTexture();
@@ -318,6 +322,33 @@ export class ImageRenderer {
       this.backgroundMeshes.bottomMesh = bottomMesh;
     }
 
+  }
+
+  backgroundImageMesh: Mesh | null;
+  updateImageBackground() {
+
+    if (this.backgroundImageMesh) {
+      this.scene.remove(this.backgroundImageMesh);
+    }
+
+    if (!this.backgroundImage) {
+      return;
+    }
+
+    const material = new MeshBasicMaterial({
+//      uniforms: {},
+      //vertexShader: particleWaveVert.substr(16, particleWaveVert.length-20).replace(/\\n/g, "\n").replace(/\\r/g, "\n"),
+      //fragmentShader: dotFrag.substr(16, dotFrag.length-20).replace(/\\n/g, "\n").replace(/\\r/g, "\n"),
+
+      map: this.uniforms.uTexture.value,
+      transparent: false,
+    });
+
+    var planeGeo = new PlaneGeometry(this.pixelDensity * this.size / this.pixelDensity, this.height * this.size / this.pixelDensity, 1, 1);
+    const mesh = new Mesh(planeGeo, material);
+    mesh.position.setZ(-999);
+    this.scene.add(mesh);
+    this.backgroundImageMesh = mesh;
   }
 
 

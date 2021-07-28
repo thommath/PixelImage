@@ -23,19 +23,26 @@ uniform float uAnimationDuration;
 uniform float uTime;
 uniform float textureWidth;
 uniform float textureHeight;
+uniform float uEnhanceDetails;
+
 uniform sampler2D uTexture;
 uniform sampler2D turbulenceTexture;
 uniform sampler2D turbulenceTexture2;
 uniform sampler2D edgesTexture;
-uniform float uEnhanceDetails;
+
+uniform float alpha;
+uniform float uColorOffset;
+uniform float uLimitColors;
+
+
+uniform float uPointilism;
+uniform float uTwoColors;
+uniform float uReducedColorMultiplier;
 
 
 
+varying vec4 vColor;
 varying vec2 vUv;
-varying vec2 vUv2;
-varying float vTime;
-varying vec2 vRnd;
-varying float vParticleScale;
 
 float random(float n) {
   return fract(sin(n) * 43758.5453123);
@@ -65,7 +72,7 @@ void main() {
   float noise = texture2D(turbulenceTexture, uv2).r;
   float noise2 = texture2D(turbulenceTexture2, uv2).r;
   
-  vec2 randomOffset = uRandomOffsetScale * 2.0*(0.5-vec2(random(index.z + noise), random(index.z + noise2)));
+  vec2 randomOffset = uRandomOffsetScale * 2.0*(0.5-vec2(random(index.z*2.0 + noise), random(index.z*2.0 + noise2)));
 
   randomOffset *= (1.0-uAnimation) + uAnimation * 10.0 * (0.5+0.5*(0.5+0.5*sin(noise*100.0 * uAnimationNoise + uAnimationSpeed * uTime)));
 
@@ -88,9 +95,23 @@ void main() {
     //vec4(bezier(p1, p2, p3, p4, time) * uScale, 1.0);
 
 
+
+
+  vec4 color = texture2D(uTexture, uv2 + uColorOffset * (particleScale * (random(uv2.x) - random(uv2.y)) / vec2(textureWidth, textureHeight)));
+  
+  float randomColorLimit = random(index.z*2.0 + uv2.x);
+
+  float multiplier1 = (1.0-uTwoColors) * uReducedColorMultiplier + uTwoColors;
+  float multiplier2 = (1.0-uTwoColors) + uTwoColors * uReducedColorMultiplier;
+
+  color.x = (floor(0.5 + color.x * uLimitColors) / uLimitColors) * ((1.0-uPointilism) + uPointilism * (randomColorLimit > 0.33 ? multiplier1 : multiplier2));
+  color.y = (floor(0.5 + color.y * uLimitColors) / uLimitColors) * ((1.0-uPointilism) + uPointilism * (randomColorLimit < 0.67 ? multiplier1 : multiplier2));
+  color.z = (floor(0.5 + color.z * uLimitColors) / uLimitColors) * ((1.0-uPointilism) + uPointilism * (randomColorLimit < 0.33 || randomColorLimit > 0.67 ? multiplier1 : multiplier2));
+  color.w = alpha;
+
+
+
+  vColor = color;
   vUv = uv;
-  vUv2 = uv2;
   gl_Position = finalPosition;
-  vRnd = vec2(noise, noise2);
-  vParticleScale = particleScale;
 }

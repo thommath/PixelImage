@@ -1,5 +1,5 @@
 import { Clock } from 'three';
-import * as Stats from "stats.js";
+import Stats from "stats.js";
 import { ImageRenderer } from './ImageRenderer';
 
 var style = document.createElement('style');
@@ -12,8 +12,6 @@ style.innerHTML =
 document.head.insertBefore(style, document.head.firstChild);
 
 const imageRenderer = new ImageRenderer();
-
-
 
 window.addEventListener("resize", () => {
   imageRenderer.updateSize();
@@ -41,9 +39,7 @@ imageRenderer.renderer.domElement.addEventListener('drop', async (e) => {
   e.preventDefault();
   e.stopPropagation();
   const dt = e.dataTransfer;
-
-
-  const url=e.dataTransfer.getData('text/plain');
+  const url= e.dataTransfer?.getData('text/plain');
 
   if (url) {
     await imageRenderer.loadImage(url);
@@ -65,21 +61,16 @@ imageRenderer.renderer.domElement.addEventListener('drop', async (e) => {
 });
 
 
-const run = async () => {
+export const run = async () => {
 
-  await imageRenderer.loadImage("AAM144.jpg");
-  //await imageRenderer.loadImage("nature big.jpg");
+  await imageRenderer.loadImage("vite.svg");
   imageRenderer.renderTurbulenceTextures();
   imageRenderer.renderEdgesTexture();
   imageRenderer.updateParticleInstances();
   imageRenderer.updateUniforms();
   imageRenderer.updateImageBackground();
-  
-
-
 
   const clock = new Clock();
-
 
   // Only upadte if window is in focus
   let isTabActive: boolean = true;
@@ -120,4 +111,3 @@ const run = async () => {
 
   animate();
 };
-run();

@@ -7,19 +7,14 @@ attribute vec2 uv;
 uniform mat4 modelViewMatrix;
 uniform mat4 projectionMatrix;
 
-
 uniform float uAnimation;
 uniform float uAnimationNoise;
 uniform float uAnimationSpeed;
+uniform float uAnimationDistance;
 
-uniform float uSeed;
-uniform float uPixelParticleRatio;
-uniform float uZ;
 uniform float uParticleScale;
 uniform float uRandomOffsetScale;
 uniform float uScale;
-uniform float uLayers;
-uniform float uAnimationDuration;
 uniform float uTime;
 uniform float textureWidth;
 uniform float textureHeight;
@@ -34,12 +29,9 @@ uniform float alpha;
 uniform float uColorOffset;
 uniform float uLimitColors;
 
-
 uniform float uPointilism;
 uniform float uTwoColors;
 uniform float uReducedColorMultiplier;
-
-
 
 varying vec4 vColor;
 varying vec2 vUv;
@@ -72,9 +64,10 @@ void main() {
   float noise = texture2D(turbulenceTexture, uv2).r;
   float noise2 = texture2D(turbulenceTexture2, uv2).r;
   
-  vec2 randomOffset = uRandomOffsetScale * 2.0*(0.5-vec2(random(index.z*2.0 + noise), random(index.z*2.0 + noise2)));
+  vec2 randomDir = 2.0*(0.5-vec2(random(index.z*2.0 + noise), random(index.z*2.0 + noise2)));
+  vec2 randomOffset = (1.0-uAnimation) * uRandomOffsetScale * randomDir;
 
-  randomOffset *= (1.0-uAnimation) + uAnimation * 10.0 * (0.5+0.5*(0.5+0.5*sin(noise*100.0 * uAnimationNoise + uAnimationSpeed * uTime)));
+  randomOffset += uAnimation * randomDir * uRandomOffsetScale * (0.5+0.5*(0.5+0.5*sin(noise*100.0 * uAnimationNoise + uAnimationSpeed * uTime)));
 
   uv2 += randomOffset / vec2(textureWidth, textureHeight);
 
@@ -93,8 +86,6 @@ void main() {
     modelViewMatrix *
     vec4((position * particleScale + vec3(offset, 0.0)) * uScale, 1.0);
     //vec4(bezier(p1, p2, p3, p4, time) * uScale, 1.0);
-
-
 
 
   vec4 color = texture2D(uTexture, uv2 + uColorOffset * (particleScale * (random(uv2.x) - random(uv2.y)) / vec2(textureWidth, textureHeight)));

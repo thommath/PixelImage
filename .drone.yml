@@ -11,15 +11,8 @@ steps:
   - docker build . -t 10.8.0.14:32000/pixelimage:latest -t 10.8.0.14:32000/pixelimage:${DRONE_COMMIT_SHA:0:7}
   - docker push 10.8.0.14:32000/pixelimage:${DRONE_COMMIT_SHA:0:7}
 
-- name: deliver
-  image: sinlead/drone-kubectl
-  settings:
-    kubernetes_server:
-      from_secret: k8s_server
-    kubernetes_cert:
-      from_secret: k8s_cert
-    kubernetes_token:
-      from_secret: k8s_token
+- name: update manifest repo
+  image: alpine/git
   commands:
     - git clone https://github.com/thommath/Homeserver-CD.git
     - cd Homeserver-CD

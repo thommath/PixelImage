@@ -1,0 +1,39 @@
+kind: pipeline
+type: kubernetes
+name: pixelimage
+steps:
+- name: build-server
+  image: docker:dind
+  volumes:
+  - name: docker_sock
+    path: /var/run
+  commands:
+  - docker build . -t 10.8.0.14:32000/pixelimage:latest -t 10.8.0.14:32000/pixelimage:${DRONE_COMMIT_SHA:0:7}
+  - docker push 10.8.0.14:32000/pixelimage:${DRONE_COMMIT_SHA:0:7}
+
+- name: deliver
+  image: sinlead/drone-kubectl
+  settings:
+    kubernetes_server:
+      from_secret: k8s_server
+    kubernetes_cert:
+      from_secret: k8s_cert
+    kubernetes_token:
+      from_secret: k8s_token
+  commands:
+    - git clone https://github.com/thommath/Homeserver-CD.git
+    - cd Homeserver-CD
+
+    - wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O yq
+    - chmod +x yq
+    - ./yq e -i '.spec.template.spec.containers[0].image |= "10.8.0.14:32000/pixelimage:${DRONE_COMMIT_SHA:0:7}"' 'pixelimage/deployment.yaml'
+    - git add pixelimage/deployment.yaml
+    - git commit -m "Bump pixelimage to ${DRONE_COMMIT_SHA:0:7}"
+    - git push
+  depends_on:
+  - build-server
+
+volumes:
+  - name: docker_sock
+    host:
+      path: /var/run

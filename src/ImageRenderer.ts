@@ -56,6 +56,9 @@ export class ImageRenderer {
   animationDistance = 2.0;
 
   backgroundImage = false;
+  showNoiseTurbulence1 = false;
+  showNoiseTurbulence2 = false;
+  showEdges = false;
 
   status: "loading" | "done" = "loading";
 
@@ -110,10 +113,13 @@ export class ImageRenderer {
     enhanceDetails.add(this, "enhanceDetails", 0, 100).onFinishChange(() => this.updateUniforms());
     enhanceDetails.add(this, "smoothingIterations", 0, 100).onFinishChange(() => this.renderEdgesTexture());
     enhanceDetails.add(this, "edgeMultiplier", 0.1, 2).onFinishChange(() => this.renderEdgesTexture());
+    enhanceDetails.add(this, "showEdges").onFinishChange(() => this.updateEdges());
 
     const noise = this.gui.addFolder("Noise");
-    noise.add(this, "turbulenceScale1", 0.1, 10).onFinishChange(() => this.renderTurbulenceTextures());
-    noise.add(this, "turbulenceScale2", 0.1, 10).onFinishChange(() => this.renderTurbulenceTextures());
+    noise.add(this, "showNoiseTurbulence1").onFinishChange(() => this.updateNoiseTurbulence1());
+    noise.add(this, "turbulenceScale1", 0.01, 5).onFinishChange(() => this.renderTurbulenceTextures());
+    noise.add(this, "showNoiseTurbulence2").onFinishChange(() => this.updateNoiseTurbulence2());
+    noise.add(this, "turbulenceScale2", 0.01, 5).onFinishChange(() => this.renderTurbulenceTextures());
 
 
     const particleControl = this.gui.addFolder("Particle properties");
@@ -355,6 +361,66 @@ export class ImageRenderer {
     this.backgroundImageMesh = mesh;
   }
 
+  noiseTurbulence1: Mesh | null = null;
+  updateNoiseTurbulence1() {
+
+    if (this.noiseTurbulence1) {
+      this.scene.remove(this.noiseTurbulence1);
+    }
+
+    if (!this.showNoiseTurbulence1) {
+      return;
+    }
+    const material = new MeshBasicMaterial({
+      map: this.uniforms.turbulenceTexture.value,
+      transparent: false,
+    });
+    var planeGeo = new PlaneGeometry(this.pixelDensity * this.size / this.pixelDensity, this.height * this.size / this.pixelDensity, 1, 1);
+    const mesh = new Mesh(planeGeo, material);
+    mesh.position.setZ(1);
+    this.scene.add(mesh);
+    this.noiseTurbulence1 = mesh;
+  }
+  noiseTurbulence2: Mesh | null = null;
+  updateNoiseTurbulence2() {
+
+    if (this.noiseTurbulence2) {
+      this.scene.remove(this.noiseTurbulence2);
+    }
+
+    if (!this.showNoiseTurbulence2) {
+      return;
+    }
+    const material = new MeshBasicMaterial({
+      map: this.uniforms.turbulenceTexture2.value,
+      transparent: false,
+    });
+    var planeGeo = new PlaneGeometry(this.pixelDensity * this.size / this.pixelDensity, this.height * this.size / this.pixelDensity, 1, 1);
+    const mesh = new Mesh(planeGeo, material);
+    mesh.position.setZ(1);
+    this.scene.add(mesh);
+    this.noiseTurbulence2 = mesh;
+  }
+  edgesMesh: Mesh | null = null;
+  updateEdges() {
+
+    if (this.edgesMesh) {
+      this.scene.remove(this.edgesMesh);
+    }
+
+    if (!this.showEdges) {
+      return;
+    }
+    const material = new MeshBasicMaterial({
+      map: this.uniforms.edgesTexture.value,
+      transparent: false,
+    });
+    var planeGeo = new PlaneGeometry(this.pixelDensity * this.size / this.pixelDensity, this.height * this.size / this.pixelDensity, 1, 1);
+    const mesh = new Mesh(planeGeo, material);
+    mesh.position.setZ(1);
+    this.scene.add(mesh);
+    this.edgesMesh = mesh;
+  }
 
   async loadImage(name: string) {
     this.status = "loading";

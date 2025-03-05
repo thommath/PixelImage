@@ -1,6 +1,7 @@
 import markdownRawPlugin from 'vite-raw-plugin';
 
 export default {
+    base: './',
     plugins: [
         markdownRawPlugin({
             fileRegex: /\.(frag|vert)$/

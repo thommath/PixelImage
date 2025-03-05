@@ -26,6 +26,7 @@ steps:
       from_secret: IMAGE_SERVER
   commands:
     - export IMAGE_TAG="$IMAGE_SERVER/pixelimage:${DRONE_COMMIT_SHA:0:7}"
+    - export LINE="'.spec.template.spec.containers[0].image |= $IMAGE_TAG'"
     - 'command -v ssh-agent >/dev/null || ( apt-get update -y && apt-get install openssh-client -y )'
     - eval $(ssh-agent -s)
     - echo "$SSH_KEY" | tr -d '\r' | ssh-add -
@@ -40,7 +41,7 @@ steps:
 
     - wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O yq
     - chmod +x yq
-    - ./yq e -i '.spec.template.spec.containers[0].image |= "$IMAGE_TAG"' 'pixelimage/deployment.yaml'
+    - ./yq e -i $LINE 'pixelimage/deployment.yaml'
     - git add pixelimage/deployment.yaml
     - git commit -m "Bump pixelimage to ${DRONE_COMMIT_SHA:0:7}"
     - git push

@@ -12,8 +12,7 @@ steps:
       from_secret: IMAGE_SERVER
   commands:
     - export IMAGE_TAG="$IMAGE_SERVER/pixelimage:${DRONE_COMMIT_SHA:0:7}"
-    - echo $IMAGE_TAG
-    - echo $IMAGE_SERVER
+    - echo $DRONE_REPO_NAME
     - docker build . -t $IMAGE_TAG
     - docker push $IMAGE_TAG
 
@@ -27,8 +26,7 @@ steps:
   commands:
     - export IMAGE_TAG="$IMAGE_SERVER/pixelimage:${DRONE_COMMIT_SHA:0:7}"
     - export LINE=".spec.template.spec.containers[0].image |= \"$IMAGE_TAG\""
-    - echo $IMAGE_TAG
-    - echo $LINE
+
     - 'command -v ssh-agent >/dev/null || ( apt-get update -y && apt-get install openssh-client -y )'
     - eval $(ssh-agent -s)
     - echo "$SSH_KEY" | tr -d '\r' | ssh-add -

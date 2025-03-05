@@ -7,24 +7,39 @@ steps:
   volumes:
   - name: docker_sock
     path: /var/run
+  environment:
+    IMAGE_SERVER:
+      from_secret: IMAGE_SERVER
   commands:
-  - docker build . -t 10.8.0.14:32000/pixelimage:latest -t 10.8.0.14:32000/pixelimage:${DRONE_COMMIT_SHA:0:7}
-  - docker push 10.8.0.14:32000/pixelimage:${DRONE_COMMIT_SHA:0:7}
+  - docker build . -t ${IMAGE_SERVER}/pixelimage:latest -t ${IMAGE_SERVER}/pixelimage:${DRONE_COMMIT_SHA:0:7}
+  - docker push ${IMAGE_SERVER}/pixelimage:${DRONE_COMMIT_SHA:0:7}
 
 - name: update manifest repo
   image: alpine/git
+  environment:
+    SSH_KEY:
+      from_secret: SSH_KEY
+    IMAGE_SERVER:
+      from_secret: IMAGE_SERVER
   commands:
-    - git clone https://github.com/thommath/Homeserver-CD.git
+    - 'command -v ssh-agent >/dev/null || ( apt-get update -y && apt-get install openssh-client -y )'
+    - eval $(ssh-agent -s)
+    - echo "$SSH_KEY" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - touch ~/.ssh/config
+    - touch ~/.ssh/known_hosts
+    - ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts
+    - chmod -R 400 ~/.ssh
+
+    - git clone git@github.com:thommath/Homeserver-CD.git
     - cd Homeserver-CD
 
     - wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O yq
     - chmod +x yq
-    - ./yq e -i '.spec.template.spec.containers[0].image |= "10.8.0.14:32000/pixelimage:${DRONE_COMMIT_SHA:0:7}"' 'pixelimage/deployment.yaml'
+    - ./yq e -i '.spec.template.spec.containers[0].image |= "${IMAGE_SERVER}/pixelimage:${DRONE_COMMIT_SHA:0:7}"' 'pixelimage/deployment.yaml'
     - git add pixelimage/deployment.yaml
     - git commit -m "Bump pixelimage to ${DRONE_COMMIT_SHA:0:7}"
     - git push
-  depends_on:
-  - build-server
 
 volumes:
   - name: docker_sock

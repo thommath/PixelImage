@@ -40,7 +40,7 @@ steps:
 
     - wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O yq
     - chmod +x yq
-    - ./yq e -i '.spec.template.spec.containers[0].image |= "${IMAGE_TAG}"' 'pixelimage/deployment.yaml'
+    - ./yq e -i '.spec.template.spec.containers[0].image |= "$${IMAGE_TAG}"' 'pixelimage/deployment.yaml'
     - git add pixelimage/deployment.yaml
     - git commit -m "Bump pixelimage to ${DRONE_COMMIT_SHA:0:7}"
     - git push
